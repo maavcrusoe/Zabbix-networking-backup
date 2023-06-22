@@ -1,0 +1,14 @@
+{
+    "manifest_version": 2.0,
+    "id": "backup-networking",
+    "name": "Backup Networking",
+    "version": "1.0",
+    "namespace": "BackupNetworking",
+    "description": "Backup Networking tool",
+    "actions": {
+        "backup.networking": {
+            "class": "MyBackup",
+            "view": "my.backup"
+        }
+    }
+}
