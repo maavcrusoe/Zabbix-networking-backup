@@ -7,6 +7,7 @@ This tool is for Zabbix like Oxidized from LibreNMS
 1. Need Python3 and PIP installed
 2. run pip3 install netmiko and pip3 install ping3
 3. download this script and paste in: /usr/lib/zabbix/externalscripts/
+4. Install module in zabbix (Admin > General > Modules > Sync modules)
 
 # Config
 1. Set your variables in the script
