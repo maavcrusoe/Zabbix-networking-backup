@@ -11,5 +11,5 @@ This tool is for Zabbix like Oxidized from LibreNMS
 # Config
 1. Set your variables in the script
 2. Put your SSH credentials in zabbix > Administration > macro ({$SSH_USER}, {$SSH_PWD}) if you use multiple vendors ({$SSH_HUAWEI_USER}, {$SSH_vendor_PWD})
-3. execute python3 networking-backup.py 
-4. make a cron 0 23 * * * python3 /usr/lib/zabbix/externalscripts/networking-backup.py  > /dev/null 2>&1
+3. execute python3 backup.py 
+4. make a cron 0 23 * * * python3 /usr/lib/zabbix/externalscripts/backup.py  > /dev/null 2>&1
