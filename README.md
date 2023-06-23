@@ -38,6 +38,7 @@ cd /usr/lib/zabbix/externalscripts/
 nano backup.py
 ```
 > Example output Script
+
 ![Alt text](https://github.com/maavcrusoe/Zabbix-networking-backup/blob/main/backup.png)
 
 # Installation
@@ -53,7 +54,20 @@ nano backup.py
 
 # Config
 1. Set your variables in the script
-2. Put your SSH credentials in zabbix > Administration > macro ({$SSH_USER}, {$SSH_PWD}) if you use multiple vendors ({$SSH_HUAWEI_USER}, {$SSH_vendor_PWD})
+2. Put your SSH credentials in zabbix > Administration > macro (**{$SSH_USER}, {$SSH_PWD}**) if you use multiple vendors ({$SSH_HUAWEI_USER}, {$SSH_vendor_PWD})
    **Remember your macro pattern is your "key" in config (backup.py) **  
-3. execute python3 backup.py 
-4. make a cron 0 23 * * * python3 /usr/lib/zabbix/externalscripts/backup.py  > /dev/null 2>&1
+3. make a cron to execute **python3 backup.py**
+4. Have fun 😁
+
+
+# To Do..
+- [ ] Add multiple vendors based on description macro
+- [ ] Notification on error connection (save log)
+- [ ] Create trigger in zabbix to check fail connection in log
+
+
+## Support
+
+For support telegram me.
+- [@maavcrusoe](https://t.me/maavcrusoe)
+
