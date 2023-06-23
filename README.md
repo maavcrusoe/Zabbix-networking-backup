@@ -37,6 +37,8 @@ Directorio cron (external script)
 cd /usr/lib/zabbix/externalscripts/
 nano backup.py
 ```
+> Example output Script
+![Alt text](https://github.com/maavcrusoe/Zabbix-networking-backup/blob/main/backup.png)
 
 # Installation
 
