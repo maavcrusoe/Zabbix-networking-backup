@@ -130,7 +130,7 @@ def get_sshData(key):
 
 
 # Gives us the information we need to connect.
-def get_saved_config(host, username, password,device_type):
+def get_saved_config(host, username, password, device_type):
     device = {
         "device_type": device_type,
         'ip': host,
@@ -138,40 +138,36 @@ def get_saved_config(host, username, password,device_type):
         'password': password,
     }
 
-    # Creates the connection to the device.
-    print("Connecting to SSH host", host)
-    logger.debug("Connectiong to SSH "+str(host)+" ...")
-    if device_type == "huawei":
-        try:
-            net_connect = ConnectHandler (** device)
-            net_connect.enable()
-            # Gets the running configuration.
-            print("Executing command..")
+    #print("Connecting to SSH host", host)
+    logger.debug("Connecting to SSH " + str(host) + "...")
+
+    try:
+        net_connect = ConnectHandler(**device)
+        net_connect.enable()
+
+        if device_type == "huawei":
+            # Huawei specific command
             output = net_connect.send_command("dis current-configuration")
-            print("Saving confing to file")
-            backupFile = open(dir_backup + host + ".txt", "w+")
-            backupFile.write(output)
-            print("Outputted to "+ dir_backup + host + ".txt!")
-            return True
-        except Error as e:
-            logger.error(e)
-            return False
-    elif device.device_type == "cisco":
-        try:
-            # Creates the connection to the device.
-            net_connect = ConnectHandler(** device)
-            net_connect.enable()
-            # Gets the running configuration.
+        elif device_type == "cisco":
+            # Cisco specific command
             output = net_connect.send_command("show run")
-            # Gets and splits the hostname for the output file name.
-            hostname = net_connect.send_command("show ver | i uptime")
-            hostname = hostname.split()
-            hostname = hostname[0]
-            # Creates the text file in the backup-config folder with the special name, and writes to it.
-            backupFile = open("backup-config/" + host + ".txt", "w+")
-        except Error as e:
-            logger.error(e)
-            return False
+        else:
+            # Other device type specific command
+            output = net_connect.send_command("your-command-here")
+
+        # Creates the file name, which is the hostname, and the date and time.
+        # fileName = host + "_" + dt_string
+
+        # Creates the text file in the backup-config folder with the special name, and writes to it.
+        print("Saving config to file")
+        backupFile = open(dir_backup + host + ".txt", "w+")
+        backupFile.write(output)
+        print("Outputted to " + dir_backup + host + ".txt!")
+        return True
+
+    except Error as e:
+        logger.error(e)
+        return False
   
 
 # start script
