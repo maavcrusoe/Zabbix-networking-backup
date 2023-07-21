@@ -41,6 +41,7 @@ dir_backup = "/home/user/backupdir/"        # set backup directory
 now = datetime.now()                        # Current time and formats it to the North American time of Month, Day, and Year.
 dt_string = now.strftime("%Y-%m-%d_%H-%M")
 logging.basicConfig(filename=dir_backup+'executions.log', format='%(asctime)s -  %(levelname)s | %(message)s', datefmt='%m/%d/%Y %H:%M:%S %p')
+
 ####################
 
 # Checks if the folder exists, if not, it creates it.
@@ -50,22 +51,30 @@ if not os.path.exists(dir_backup):
 hosts = []
 users = []     
 
+# Delete logfile
+subprocess.run(["rm", dir_backup+str("executions.log")])
+# Create log file empty
+logging.basicConfig(filename=dir_backup+'executions.log', format='%(asctime)s -  %(levelname)s | %(message)s', datefmt='%m/%d/%Y %H:%M:%S %p')
+
 # MySQL config
 def connectionMySQL():
-    connection = mysql.connector.connect(host='SERVER',
-                                         database='DATABASE',
-                                         user='USER',
-                                         password='PASSWORD')
+    connection = mysql.connector.connect(host='srvbt-mon',
+                                         database='zabbix',
+                                         user='zabbix_view',
+                                         password='ReN9K65W47m7')
     return connection
 
 # get all hosts by network group
 def get_AllHosts(groupid):
     connection = connectionMySQL()
     if connection != 0:
-        try:
-            sql = ('SELECT hosts_groups.groupid, hosts_groups.hostid, hosts.host, hosts.status '
-                    'FROM hosts_groups JOIN hosts ON hosts.hostid = hosts_groups.hostid '
-                    'WHERE hosts_groups.groupid = '+str(groupid)+' ')
+        try:            
+            sql = ('SELECT hosts_groups.groupid, hosts_groups.hostid, hosts.host, hosts.status, hosts.description, host_tag.value '
+                    'FROM hosts_groups '
+                    'JOIN hosts ON hosts.hostid = hosts_groups.hostid '
+                    'LEFT OUTER JOIN host_tag ON hosts.hostid = host_tag.hostid '
+                    'WHERE hosts_groups.groupid = '+str(groupid)+' AND host_tag.tag = "backup" order by hosts.host desc '
+                  )
             cursor = connection.cursor()
             cursor.execute(sql)
             records = cursor.fetchall()
@@ -83,9 +92,9 @@ def get_AllHosts(groupid):
                 connection.close() 
         return True
 
+
 # put your {MACRO.NAME} from zabbix 
 def get_sshData(key):
-
     user = None
     password = None
     connection = connectionMySQL()
@@ -144,16 +153,20 @@ def get_saved_config(host, username, password, device_type):
     try:
         net_connect = ConnectHandler(**device)
         net_connect.enable()
-
-        if device_type == "huawei":
+        if device_type == False:
+            pass  # No action needed for Juniper devices yet...
+        elif device_type == "huawei":
             # Huawei specific command
             output = net_connect.send_command("dis current-configuration")
         elif device_type == "cisco":
             # Cisco specific command
             output = net_connect.send_command("show run")
+        elif device_type == "fortinet":
+            # Cisco specific command
+            output = net_connect.send_command("show full-configuration | grep .")
         else:
             # Other device type specific command
-            output = net_connect.send_command("your-command-here")
+            pass
 
         # Creates the file name, which is the hostname, and the date and time.
         # fileName = host + "_" + dt_string
@@ -165,26 +178,36 @@ def get_saved_config(host, username, password, device_type):
         print("Outputted to " + dir_backup + host + ".txt!")
         return True
 
+    except NetMikoTimeoutException as e:
+        logger.error("SSH exception! "+str(e))
+        #return e
+    except NetMikoAuthenticationException as e:
+        logger.error("Error credentials! "+str(e))
+        #return e
+    except SSHException as e:
+        logger.error("SSHException! "+str(e))
+        #return e
     except Error as e:
-        logger.error(e)
-        return False
+        logger.error("Error exception: "+str(e))
+        #return e
   
 
 # start script
-def main():
+def main():  
     i = 0
     result = get_sshData(key)
     #print("result:",result)             # retreive all ssh logins
     #print("user 1:",result[0]["user"])  # retreive 1st user 
     #print("user 2:",result[1]["user"])  # 2nd user if you want to retreive password use result[x]["password"]
-
+    
     # save results into var
     username = result[0]["user"]
     password = result[0]["password"]
     device_type = result[0]["description"].decode() # we need to decode because zabbix return Bytes..
-
+    # retrieve all hosts
     allHosts = get_AllHosts(groupid)
     print("Found",len(allHosts), " hosts")
+    logger.debug("Found "+str(len(allHosts))+" hosts")
 
     # loop and save to obj values
     for row in allHosts:
@@ -193,23 +216,35 @@ def main():
             "groupid": row[0],
             "hostid": row[1],
             "hostname" : row[2],
-            "status" : row[3]
+            "status" : row[3],
+            "description" : row[4].decode(),
+            "tag" : row[5]
         }
         hosts.append(obj)
         i += 1
 
+    # loop each host
+    n = 0
     for x in hosts:
+        logger.info("########## Current item | "+str(n)+"  ##########")
+
+        if x["tag"]:
+            device_type = x["tag"]
+        else:
+            device_type = False
+
+        n +=1
         print("Getting config from: ",x["hostname"], " >> ",x["hostid"])
         print("width this ssh credentials:", str(device_type))
         print(username)
-        #print(password)
+        print(x["tag"])
+
         result = get_saved_config(x["hostname"],username,password,str(device_type))
+        print(result)
         if result == True:
-            logger.debug(str(x["hostname"])+" config saved succefully")
-            return True
+            logger.info(str(x["hostname"])+" config saved succefully ✅")
         else:
-            logger.error(str(x["hostname"])+" Problem getting config...")
-            return False
+            logger.error(str(x["hostname"])+" Problem getting config... 🆘")
 
 
 # execute script
